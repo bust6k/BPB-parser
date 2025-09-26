@@ -4,9 +4,9 @@
 #include <unistd.h>  
 
 #define MIN_ARGS 2
-#define EXIT_FAILURE 1
 #define POST_SUCCESS 1
 #define POST_FAILURE 0
+#define BPB_FAILURE 1
 
 int* read_first_sector(int file_descriptor)
 {
@@ -47,14 +47,14 @@ int  post(int* data_for_check)
 
     if(!(is_bpb((*data_for_check),(*(data_for_check += 0x1FE)))))
     {
-        printf("иди нахер сосвоими  mbr/gpt. ЭТА ПРИЛОЖЕНИЕ РАБОТАЕТ С BPB \n");
+        printf("[BPB-PARSER] warning: the proggram work only with BPB-like disks \n");
         return POST_FAILURE;
     }
     data_for_check -= 0x1FE;
 
     if(is_hdd((*(data_for_check += 0x15))))
     {
-        printf("мы работаем только с флоппи");
+        printf("[BPB-PARSER] warning: the proggram works only with floppy");
         return POST_FAILURE ;
     }
     return POST_SUCCESS;
@@ -70,27 +70,28 @@ int disk_size(int* bpb)
 
 int main(int argc,char *argv[])
 {
-
-
 if(argc < MIN_ARGS)
 {
-printf("прогграма даже этап POST не начала, а ты уже обкакался. НЕЛЬЗЯ ПОДАВАТЬ МЕНЬШЕ  1 ПАРАМЕТРА!");
-return -1;
+printf("[BPB-PARSER] erorr: the proggram must have an argument");
+return BPB_FAILURE;
 }
+    
 int disk_fd = open(argv[1],O_RDONLY);
 
 if(disk_fd == -1)
 {
-    printf("проверь, ты уверен что такой файл существует?");
-    return -1;
+    printf("[BPB-PARSER] error:are you sure the file exists?");
+    return  BPB_FAILURE;
 }
 
 int* buf = read_first_sector(disk_fd);
 
-int foo = post(buf);
-if(!!foo){
-printf("размер диска %d МБ",disk_size(buf));
+int post_sucsess = post(buf);
+    
+if(post_sucsess)
+{
+printf("the disk size %d MiB",disk_size(buf));
 }
+    
 free(buf);
-
 }
